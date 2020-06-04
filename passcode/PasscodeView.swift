@@ -14,9 +14,9 @@ import UIKit
     
     //MARK: Customizable from Interface Builder
     @IBInspectable public var underlineWidth: CGFloat = 40
-    @IBInspectable public var underlineHSpacing: CGFloat = 10
+    @IBInspectable public var underlineHSpacing: CGFloat = 8
     @IBInspectable public var underlineVMargin: CGFloat = 0
-    @IBInspectable public var characterLimit: Int = 4 {
+    @IBInspectable public var characterLimit: Int = 6 {
         willSet {
             if characterLimit != newValue {
                 updateView()
@@ -37,27 +37,29 @@ import UIKit
         }
     }
     
-    @IBInspectable public var textColor: UIColor = UIColor.clear
-    @IBInspectable public var placeholderColor: UIColor = UIColor.lightGray
-    @IBInspectable public var underlineColor: UIColor = UIColor.darkGray
-    @IBInspectable public var updatedUnderlineColor: UIColor = UIColor.clear
+    @IBInspectable public var textColor: UIColor = .clear
+    @IBInspectable public var placeholderColor: UIColor = .lightGray
+    @IBInspectable public var underlineColor: UIColor = .darkGray
+    @IBInspectable public var updatedUnderlineColor: UIColor = .clear
+    @IBInspectable public var errorColor: UIColor = .red
     @IBInspectable public var secureText: Bool = false
     @IBInspectable public var needToUpdateUnderlines: Bool = true
-    @IBInspectable public var characterBackgroundColor: UIColor = UIColor.yellow
+    @IBInspectable public var characterBackgroundColor: UIColor = .white
     @IBInspectable public var characterBackgroundCornerRadius: CGFloat = 0
-    @IBInspectable public var highlightInputUnderline: Bool = false {
-        didSet {
-        
-        }
-    }
-    
+    @IBInspectable public var highlightInputUnderline: Bool = false
+    @IBInspectable public var errorViewHeight: CGFloat = 20
+    @IBInspectable public var cellHeight: CGFloat = 54
+    @IBInspectable public var marginErrorText: CGFloat = 20
+
+
+
     @IBInspectable public var isError: Bool = false {
         
         didSet {
             if isError {
                 for label in labels {
                     let index = labels.firstIndex(of: label) ?? 0
-                    underlines[index].backgroundColor = .red
+                    underlines[index].backgroundColor = errorColor
                 }
             } else {
                 
@@ -83,6 +85,17 @@ import UIKit
     public var font: UIFont = UIFont.systemFont(ofSize: 14)
     public var allowedCharacterSet: CharacterSet = CharacterSet.alphanumerics
     public var textContentType: UITextContentType! = nil
+    public var errorMessage: String? {
+        didSet {
+            if let message = errorMessage {
+                setupErrorLabel(message: message)
+                isError = true
+            } else {
+                errorLabel.removeFromSuperview()
+                isError = false
+            }
+        }
+    }
     
     private var _inputView: UIView?
     open override var inputView: UIView? {
@@ -118,6 +131,7 @@ import UIKit
     private var labels: [UILabel] = []
     private var underlines: [UIView] = []
     private var backgrounds: [UIView] = []
+    private var errorLabel: UILabel!
     
     
     //MARK: Init and awake
@@ -181,22 +195,10 @@ import UIKit
         }
         updateBackgrounds()
         
-        
-          let bottomLabel = UILabel(frame: CGRect())
-             bottomLabel.text = "Error Message"
-        bottomLabel.textColor = .red
-        bottomLabel.font = UIFont.systemFont(ofSize: 12)
-             addSubview(bottomLabel)
-          
-            bottomLabel.translatesAutoresizingMaskIntoConstraints = false
-
-             
-             bottomLabel.bottomAnchor.constraint(equalTo:bottomAnchor).isActive = true
-             bottomLabel.heightAnchor.constraint(equalToConstant: 20).isActive = true
-             bottomLabel.centerXAnchor.constraint(equalTo: centerXAnchor).isActive = true
-             bottomLabel.widthAnchor.constraint(equalTo: widthAnchor, multiplier: 1.0).isActive = true
-        
-        
+        if needToRecreateErrorLabel() {
+            errorLabel.removeFromSuperview()
+        }
+                
         setNeedsLayout()
     }
     
@@ -210,6 +212,10 @@ import UIKit
     
     private func needToRecreateBackgrounds() -> Bool {
         return characterLimit != backgrounds.count
+    }
+    
+    private func needToRecreateErrorLabel() -> Bool {
+        return errorLabel != nil
     }
     
     private func recreateUnderlines() {
@@ -252,6 +258,20 @@ import UIKit
             let isplaceholder = isPlaceholder(index)
             label.textColor = labelColor(isPlaceholder: isplaceholder)
         }
+    
+    }
+    
+    private func setupErrorLabel(message: String) {
+        errorLabel = UILabel(frame: CGRect())
+        errorLabel.text = message
+        errorLabel.textColor = errorColor
+        errorLabel.font = UIFont.systemFont(ofSize: 12)
+        addSubview(errorLabel)
+        errorLabel.translatesAutoresizingMaskIntoConstraints = false
+        errorLabel.bottomAnchor.constraint(equalTo:bottomAnchor).isActive = true
+        errorLabel.heightAnchor.constraint(equalToConstant: errorViewHeight).isActive = true
+        errorLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: marginErrorText).isActive = true
+        errorLabel.widthAnchor.constraint(equalTo: widthAnchor, multiplier: 1.0).isActive = true
     }
 
     private func updateUnderlines() {
@@ -324,7 +344,7 @@ import UIKit
             let underline = underlines[i]
             let background = backgrounds[i]
             underline.frame = CGRect(x: currentUnderlineX, y: underlineY, width: underlineWidth, height: underlineHeight)
-            background.frame = CGRect(x: currentUnderlineX, y: 0, width: underlineWidth, height: 54)
+            background.frame = CGRect(x: currentUnderlineX, y: 0, width: underlineWidth, height: cellHeight)
             currentUnderlineX += underlineWidth + underlineHSpacing
         }
         
@@ -332,8 +352,7 @@ import UIKit
             $0.sizeToFit()
             let labelWidth = $0.bounds.width
             let labelX = (currentLabelCenterX - labelWidth / 2).rounded(.down)
-            $0.frame = CGRect(x: labelX, y: 0, width: labelWidth, height: 54)
-            $0.backgroundColor = .blue
+            $0.frame = CGRect(x: labelX, y: 0, width: labelWidth, height: cellHeight)
             currentLabelCenterX += underlineWidth + underlineHSpacing
         }
         

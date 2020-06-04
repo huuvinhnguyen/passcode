@@ -13,13 +13,19 @@ class ViewController: UIViewController {
     @IBOutlet weak var pinCodeTextField: PinCodeTextField!
     override func viewDidLoad() {
         super.viewDidLoad()
-        
 
         
     }
 
     @IBAction func updatePin(_ sender: Any) {
-        pinCodeTextField.isError = !pinCodeTextField.isError
+        if let message = pinCodeTextField.errorMessage {
+            pinCodeTextField.errorMessage = nil
+
+            
+        } else {
+            pinCodeTextField.errorMessage = "This is text message"
+
+        }
     }
     
 }
